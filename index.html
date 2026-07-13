@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#232b16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Satukirjasto">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('satukirjasto-theme') || 'day');</script>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Satukirjasto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#232b16;
+    --bg-elevated:#2c3620;
+    --bg-elevated-2:#384428;
+    --accent-gold:#7fb0c2;
+    --accent-gold-dim:#4f7f8f;
+    --accent-rose:#8fbf8a;
+    --text-primary:#f0f3e8;
+    --text-muted:#a3ab8f;
+    --danger:#e07a6b;
+    --radius:18px;
+    --font-display:'Fraunces',serif;
+    --font-body:'Nunito',sans-serif;
+  }
+  html[data-theme="night"]{
+    --bg:#131a26;
+    --bg-elevated:#1a2536;
+    --bg-elevated-2:#233247;
+    --accent-gold:#8fb7e6;
+    --accent-gold-dim:#5d7fa8;
+    --accent-rose:#6c8fd6;
+    --text-primary:#eef1f7;
+    --text-muted:#8a97ac;
+    --danger:#e0847a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cdefs%3E%3Csymbol id='sp' viewBox='0 0 100 130'%3E%3Cpath d='M50 125 C48 90 52 68 50 40' stroke='%238fbf8a' stroke-width='3' fill='none'/%3E%3Cpath d='M50 70 C30 65 20 50 22 34 C40 39 48 52 50 70 Z' fill='%238fbf8a'/%3E%3Cpath d='M50 50 C70 45 80 30 78 15 C62 20 54 32 50 50 Z' fill='%238fbf8a'/%3E%3C/symbol%3E%3C/defs%3E%3Cg opacity='0.14'%3E%3Cuse href='%23sp' x='20' y='30' width='100' height='130' transform='rotate(-8 70 95)'/%3E%3Cuse href='%23sp' x='210' y='140' width='120' height='156' transform='rotate(12 270 218)'/%3E%3Cuse href='%23sp' x='60' y='230' width='90' height='117' transform='rotate(-14 105 288)'/%3E%3C/g%3E%3C/svg%3E") 0 0/360px 360px repeat,
+      var(--bg);
+    color:var(--text-primary);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .3s ease, color .3s ease;
+  }
+  html[data-theme="night"] body{
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cdefs%3E%3Csymbol id='sp' viewBox='0 0 100 130'%3E%3Cpath d='M50 125 C48 90 52 68 50 40' stroke='%236c8fd6' stroke-width='3' fill='none'/%3E%3Cpath d='M50 70 C30 65 20 50 22 34 C40 39 48 52 50 70 Z' fill='%236c8fd6'/%3E%3Cpath d='M50 50 C70 45 80 30 78 15 C62 20 54 32 50 50 Z' fill='%236c8fd6'/%3E%3C/symbol%3E%3C/defs%3E%3Cg opacity='0.16'%3E%3Cuse href='%23sp' x='20' y='30' width='100' height='130' transform='rotate(-8 70 95)'/%3E%3Cuse href='%23sp' x='210' y='140' width='120' height='156' transform='rotate(12 270 218)'/%3E%3Cuse href='%23sp' x='60' y='230' width='90' height='117' transform='rotate(-14 105 288)'/%3E%3C/g%3E%3C/svg%3E") 0 0/360px 360px repeat,
+      var(--bg);
+  }
+  #app{max-width:520px;margin:0 auto;padding:0 18px 110px;min-height:100vh;}
+  button,input,textarea,select{font-family:inherit;}
+  button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+    outline:2px solid var(--accent-gold); outline-offset:2px;
+  }
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 2px 6px;
+  }
+  .brand-wrap{display:flex;flex-direction:column;gap:3px;}
+  .brand{
+    font-family:var(--font-display);font-weight:600;font-size:1.75rem;
+    display:flex;align-items:center;gap:9px;letter-spacing:.3px;
+    background:linear-gradient(120deg, var(--text-primary) 25%, var(--accent-gold) 115%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .moon-mark{filter:drop-shadow(0 0 7px rgba(143,191,138,.5));-webkit-text-fill-color:initial;}
+  .brand-tagline{
+    font-size:.68rem;letter-spacing:2px;text-transform:uppercase;
+    color:var(--text-muted);font-weight:700;margin-left:3px;
+  }
+  .icon-btn{
+    background:var(--bg-elevated);border:1px solid rgba(240,243,232,.08);
+    color:var(--text-primary);width:42px;height:42px;border-radius:50%;
+    font-size:1.05rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease;
+  }
+  .icon-btn:hover{background:var(--bg-elevated-2);}
+  .icon-btn.danger{color:var(--danger);}
+
+  .toolbar{margin:18px 0 20px;}
+  .btn-primary{
+    width:100%;padding:15px 18px;border:none;border-radius:14px;
+    background:var(--accent-gold);color:#0c2023;font-weight:800;font-size:1rem;
+    cursor:pointer;transition:transform .12s ease, background .15s ease;
+  }
+  .btn-primary:hover{background:#93c2d2;}
+  .btn-primary:active{transform:scale(.98);}
+  .btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+
+  .btn-secondary{
+    width:100%;padding:13px 18px;border-radius:14px;font-weight:700;font-size:.95rem;
+    background:transparent;color:var(--text-muted);border:1px solid rgba(240,243,232,.15);
+    cursor:pointer;
+  }
+
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--text-muted);
+  }
+  .empty-state .glyph{font-size:2.6rem;display:block;margin-bottom:14px;}
+  .empty-state h3{font-family:var(--font-display);color:var(--text-primary);font-weight:600;margin:0 0 8px;}
+  .empty-state p{margin:0;line-height:1.5;font-size:.95rem;}
+
+  .library{display:flex;flex-direction:column;gap:12px;}
+  .story-card{
+    background:var(--bg-elevated);border-radius:var(--radius);padding:16px 16px;
+    display:flex;align-items:center;gap:12px;border:1px solid rgba(240,243,232,.06);
+  }
+  .story-info{flex:1;min-width:0;}
+  .story-title{
+    font-family:var(--font-display);font-weight:700;font-size:1.15rem;
+    letter-spacing:.2px;margin-bottom:4px;color:var(--text-primary);
+  }
+  .story-snippet{color:var(--text-muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .story-actions{display:flex;gap:8px;flex-shrink:0;}
+  .play-icon-btn{
+    width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--accent-gold);color:#0c2023;font-size:1rem;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* Moon phase progress element - the signature piece */
+  .moon-progress{
+    position:relative;width:52px;height:52px;border-radius:50%;flex-shrink:0;
+    overflow:hidden;background:var(--bg-elevated-2);
+    box-shadow:0 0 0 1px rgba(240,243,232,.08);
+  }
+  .moon-progress .moon-light{
+    position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 38% 35%, #eefaf5 0%, var(--accent-gold) 65%, var(--accent-gold-dim) 100%);
+  }
+  .moon-progress .moon-shadow{
+    position:absolute;top:0;left:0;width:100%;height:100%;border-radius:50%;
+    background:var(--bg-elevated-2);
+    transform:translateX(calc(var(--progress, 0) * 100%));
+    transition:transform .15s linear;
+  }
+
+  /* Player bar */
+  .player{
+    position:fixed;left:0;right:0;bottom:0;
+    background:var(--bg-elevated);border-top:1px solid rgba(240,243,232,.1);
+    padding:12px 18px calc(14px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;gap:12px;
+    max-width:520px;margin:0 auto;
+  }
+  .player-info{flex:1;min-width:0;}
+  .player-title{font-family:var(--font-display);font-weight:600;font-size:.95rem;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .player-time{font-size:.78rem;color:var(--text-muted);margin-top:2px;}
+  .play-btn{
+    width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--accent-gold);color:#0c2023;font-size:1.1rem;flex-shrink:0;
+  }
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(10,14,6,.7);
+    display:flex;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  @media (min-width:560px){ .overlay{align-items:center;} }
+  .modal{
+    background:var(--bg-elevated);width:100%;max-width:520px;
+    border-radius:22px 22px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));
+    max-height:88vh;overflow-y:auto;
+  }
+  @media (min-width:560px){ .modal{border-radius:22px;} }
+  .modal h2{font-family:var(--font-display);font-weight:600;margin:0 0 18px;font-size:1.3rem;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.85rem;color:var(--text-muted);margin-bottom:6px;font-weight:700;}
+  .field input[type=text],.field input[type=password],.field textarea,.field select{
+    width:100%;background:var(--bg);border:1px solid rgba(240,243,232,.12);
+    color:var(--text-primary);padding:12px 14px;border-radius:12px;font-size:.95rem;
+  }
+  .field textarea{min-height:160px;resize:vertical;line-height:1.5;}
+  .char-count{font-size:.78rem;color:var(--text-muted);text-align:right;margin-top:4px;}
+  .row{display:flex;gap:10px;align-items:center;}
+  .row .field{flex:1;margin-bottom:0;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions > *{flex:1;}
+  .modal-close{
+    background:none;border:none;color:var(--text-muted);font-size:.9rem;
+    display:block;margin:0 0 8px auto;cursor:pointer;
+  }
+  .progress-note{font-size:.85rem;color:var(--accent-gold);margin-top:10px;text-align:center;}
+  .hint{font-size:.8rem;color:var(--text-muted);line-height:1.5;margin-top:-6px;margin-bottom:16px;}
+  .hint a{color:var(--accent-gold);}
+  .voice-preview-btn{
+    background:var(--bg-elevated-2);border:1px solid rgba(240,243,232,.1);color:var(--text-primary);
+    border-radius:10px;width:42px;height:42px;flex-shrink:0;cursor:pointer;
+  }
+
+  .read-title{
+    font-family:var(--font-display);font-weight:700;font-size:1.65rem;
+    letter-spacing:.3px;margin:0 0 20px;position:relative;
+  }
+  .read-title::after{
+    content:'';display:block;width:44px;height:3px;border-radius:3px;
+    background:var(--accent-gold);margin-top:11px;
+  }
+  .read-body{font-size:1.15rem;line-height:1.85;color:var(--text-primary);}
+  .read-body p{margin:0 0 1em;}
+  .story-img{width:100%;border-radius:var(--radius);margin:4px 0 1.2em;display:block;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--bg-elevated-2);color:var(--text-primary);padding:12px 20px;
+    border-radius:12px;font-size:.9rem;z-index:100;max-width:88%;text-align:center;
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .toast.error{background:var(--danger);color:#2a0a05;font-weight:700;}
+
+  .gate-brand{
+    font-family:var(--font-display);font-weight:600;font-size:2rem;
+    display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;
+    background:linear-gradient(120deg, var(--text-primary) 25%, var(--accent-gold) 115%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .gate-brand span{-webkit-text-fill-color:initial;}
+
+  [hidden]{display:none !important;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Sign-in gate -->
+<div class="overlay" id="authGate">
+  <div class="modal" style="text-align:center;">
+    <div class="gate-brand"><span>🌙</span>Satukirjasto</div>
+    <p class="hint" style="margin-top:4px;">Kirjaudu sisään jatkaaksesi satukirjastoon.</p>
+    <button class="btn-primary" id="googleSignInBtn">Kirjaudu Google-tilillä</button>
+  </div>
+</div>
+
+<!-- Waiting-for-access gate -->
+<div class="overlay" id="pendingGate" hidden>
+  <div class="modal" style="text-align:center;">
+    <div class="gate-brand" style="font-size:1.5rem;"><span>🌙</span>Satukirjasto</div>
+    <h2 style="margin-top:6px;">Tili odottaa hyväksyntää</h2>
+    <p class="hint">Kirjauduit sisään, mutta tililläsi ei ole vielä pääsyä satukirjastoon. Ota yhteyttä ylläpitäjään.</p>
+    <button class="btn-secondary" id="signOutBtnPending">Kirjaudu ulos</button>
+  </div>
+</div>
+
+<div id="app" hidden>
+
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand"><span class="moon-mark">🌙</span>Satukirjasto</div>
+      <div class="brand-tagline">Iltasatuja pienille korville</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="icon-btn" id="themeToggleBtn" aria-label="Vaihda päivä/yö-teema">☀️</button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Asetukset">⚙️</button>
+      <button class="icon-btn" id="signOutBtn" aria-label="Kirjaudu ulos">🚪</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <button class="btn-primary" id="addStoryBtn">+ Uusi satu</button>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+      <span class="glyph">🌙📖</span>
+      <h3>Ei vielä satuja</h3>
+      <p>Liitä ensimmäinen tarinasi — voit lukea sen heti, ja lisätä äänikirjan myöhemmin jos haluat.</p>
+    </div>
+
+    <div id="library" class="library"></div>
+  </main>
+
+  <!-- Player -->
+  <div class="player" id="player" hidden>
+    <div class="moon-progress" id="moonProgress">
+      <div class="moon-light"></div>
+      <div class="moon-shadow"></div>
+    </div>
+    <div class="player-info">
+      <div class="player-title" id="playerTitle">—</div>
+      <div class="player-time"><span id="curTime">0:00</span> / <span id="totalTime">0:00</span></div>
+    </div>
+    <button class="play-btn" id="playPauseBtn" aria-label="Toista/Tauko">⏸</button>
+    <button class="icon-btn" id="closePlayerBtn" aria-label="Sulje soitin">✕</button>
+    <audio id="audioEl" preload="metadata"></audio>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="overlay" id="settingsOverlay" hidden>
+    <div class="modal">
+      <button class="modal-close" id="settingsCloseBtn">Sulje ✕</button>
+      <h2>Asetukset</h2>
+      <p class="hint">
+        Tarvitset ElevenLabs-tilin ja API-avaimen. Avain tallennetaan vain tähän laitteeseen
+        (selaimen omaan muistiin) — se ei mene mihinkään muualle kuin suoraan ElevenLabsille äänen luontia varten.
+        Hae avain osoitteesta <a href="https://elevenlabs.io" target="_blank" rel="noopener">elevenlabs.io</a> → Profiili → API keys.
+      </p>
+      <div class="field">
+        <label for="apiKeyInput">ElevenLabs API-avain</label>
+        <input type="password" id="apiKeyInput" placeholder="sk_...">
+      </div>
+      <div class="row" style="margin-bottom:16px;">
+        <button class="btn-secondary" id="fetchVoicesBtn" type="button">Hae äänet</button>
+      </div>
+      <div class="field" id="voiceFieldWrap" hidden>
+        <label for="voiceSelect">Ääni</label>
+        <div class="row">
+          <select id="voiceSelect"></select>
+          <button class="voice-preview-btn" id="previewVoiceBtn" type="button" aria-label="Kuuntele esimerkki">▶</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="modelSelect">Laatu</label>
+        <select id="modelSelect">
+          <option value="eleven_multilingual_v2">Multilingual v2 – paras laatu satuihin (suositus)</option>
+          <option value="eleven_flash_v2_5">Flash v2.5 – nopeampi, kevyempi</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="saveSettingsBtn">Tallenna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add story modal -->
+  <div class="overlay" id="addOverlay" hidden>
+    <div class="modal">
+      <button class="modal-close" id="addCloseBtn">Sulje ✕</button>
+      <h2 id="addModalTitle">Uusi satu</h2>
+      <div class="field">
+        <label for="titleInput">Nimi</label>
+        <input type="text" id="titleInput" placeholder="Esim. Onni ja kuunsäde">
+      </div>
+      <div class="field">
+        <label for="textInput">Tarinan teksti</label>
+        <textarea id="textInput" placeholder="Liitä tähän Claude-chatissa kirjoittamasi satu..."></textarea>
+        <div class="char-count"><span id="charCount">0</span> merkkiä</div>
+      </div>
+      <button class="btn-secondary" id="insertImageBtn" type="button" style="margin-bottom:16px;">🖼️ Lisää kuva kohdistimen kohtaan</button>
+      <input type="file" id="imageFileInput" accept="image/*" hidden>
+      <p class="hint">Voit tallentaa sadun pelkkänä tekstinä luettavaksi heti, tai luoda siitä myös äänikirjan (vaatii ElevenLabs-asetukset). Napauta ensin tekstissä kohta, johon kuva tulee, ja paina sitten "Lisää kuva".</p>
+      <button class="btn-primary" id="saveTextBtn">Tallenna satu</button>
+      <button class="btn-secondary" id="generateBtn" style="margin-top:10px;">🎙 Luo myös äänikirja (valinnainen)</button>
+      <div class="progress-note" id="progressNote" hidden></div>
+    </div>
+  </div>
+
+  <!-- Read modal -->
+  <div class="overlay" id="readOverlay" hidden>
+    <div class="modal">
+      <button class="modal-close" id="readCloseBtn">Sulje ✕</button>
+      <h2 class="read-title" id="readTitle"></h2>
+      <div class="read-body" id="readBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, orderBy
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js";
+
+(async function(){
+  "use strict";
+
+  const ADMIN_EMAIL = "jimkasperz@gmail.com";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmZd44fIrnUbLrlWjoRYsyc1Z9zRJYcOg",
+    authDomain: "satukirjasto-b0195.firebaseapp.com",
+    projectId: "satukirjasto-b0195",
+    storageBucket: "satukirjasto-b0195.firebasestorage.app",
+    messagingSenderId: "612716279783",
+    appId: "1:612716279783:web:786110dacdaa29933faf42"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = getAuth(fbApp);
+  const db = getFirestore(fbApp);
+  const storage = getStorage(fbApp);
+
+  const EL_BASE = "https://api.elevenlabs.io/v1";
+  const SETTINGS_KEY = "satukirjasto-settings";
+  const THEME_KEY = "satukirjasto-theme";
+
+  let isAdmin = false;
+  let currentUser = null;
+
+  // ---------- Theme (day/night) ----------
+  function applyTheme(theme){
+    document.documentElement.setAttribute("data-theme", theme);
+    document.getElementById("themeToggleBtn").textContent = theme === "night" ? "🌙" : "☀️";
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme === "night" ? "#131a26" : "#232b16");
+  }
+  applyTheme(document.documentElement.getAttribute("data-theme") || "day");
+  document.getElementById("themeToggleBtn").addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "night" ? "day" : "night";
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  });
+
+  // ---------- Auth ----------
+  function showAuthGate(){
+    document.getElementById("authGate").hidden = false;
+    document.getElementById("pendingGate").hidden = true;
+    document.getElementById("app").hidden = true;
+  }
+  function showPendingGate(){
+    document.getElementById("authGate").hidden = true;
+    document.getElementById("pendingGate").hidden = false;
+    document.getElementById("app").hidden = true;
+  }
+  function showApp(){
+    document.getElementById("authGate").hidden = true;
+    document.getElementById("pendingGate").hidden = true;
+    document.getElementById("app").hidden = false;
+  }
+  function applyRoleUI(){
+    document.getElementById("settingsBtn").style.display = isAdmin ? "" : "none";
+    document.querySelector(".toolbar").style.display = isAdmin ? "" : "none";
+  }
+
+  async function ensureUserDoc(user){
+    const uref = doc(db, "users", user.uid);
+    const snap = await getDoc(uref);
+    if (!snap.exists()){
+      const data = { email: user.email || "", displayName: user.displayName || "", access: false, createdAt: Date.now() };
+      await setDoc(uref, data);
+      return data;
+    }
+    return snap.data();
+  }
+
+  document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (err){
+      showToast("Kirjautuminen epäonnistui: " + err.message, true);
+    }
+  });
+  function doSignOut(){ signOut(auth); }
+  document.getElementById("signOutBtn").addEventListener("click", doSignOut);
+  document.getElementById("signOutBtnPending").addEventListener("click", doSignOut);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user){
+      isAdmin = false;
+      currentUser = null;
+      showAuthGate();
+      return;
+    }
+    currentUser = user;
+    isAdmin = user.email === ADMIN_EMAIL;
+    if (isAdmin){
+      applyRoleUI();
+      showApp();
+      await refreshLibrary();
+      return;
+    }
+    try {
+      const data = await ensureUserDoc(user);
+      if (data.access){
+        applyRoleUI();
+        showApp();
+        await refreshLibrary();
+      } else {
+        showPendingGate();
+      }
+    } catch (err){
+      showToast("Virhe kirjautumisen tarkistuksessa: " + err.message, true);
+      showPendingGate();
+    }
+  });
+
+  // ---------- Firestore + Storage story storage ----------
+  async function getAllStoriesFromDb(){
+    const q = query(collection(db, "stories"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  async function saveStoryDoc(id, data){
+    await setDoc(doc(db, "stories", id), data);
+  }
+  async function deleteStoryDoc(id){
+    await deleteDoc(doc(db, "stories", id));
+    try { await deleteObject(ref(storage, `audio/${id}.mp3`)); } catch (e){ /* no audio file, ignore */ }
+  }
+  async function uploadAudioForStory(id, blob){
+    const audioRef = ref(storage, `audio/${id}.mp3`);
+    await uploadBytes(audioRef, blob, { contentType: "audio/mpeg" });
+    return await getDownloadURL(audioRef);
+  }
+
+  // ---------- Settings ----------
+  function getSettings(){
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); }
+    catch { return {}; }
+  }
+  function saveSettingsToStorage(s){
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  }
+
+  // ---------- ElevenLabs API ----------
+  async function elErrorMessage(res){
+    try {
+      const j = await res.json();
+      return (j && j.detail && (j.detail.message || j.detail)) || `Virhe (${res.status})`;
+    } catch {
+      return `Virhe (${res.status})`;
+    }
+  }
+
+  async function fetchVoices(apiKey){
+    const res = await fetch(`${EL_BASE}/voices`, { headers: { "xi-api-key": apiKey } });
+    if (!res.ok) throw new Error(await elErrorMessage(res));
+    const data = await res.json();
+    return data.voices || [];
+  }
+
+  function splitTextForTTS(text, maxChars){
+    maxChars = maxChars || 9000;
+    const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    const chunks = [];
+    let current = "";
+    for (const p of paragraphs){
+      const candidate = current ? current + "\n\n" + p : p;
+      if (candidate.length > maxChars){
+        if (current) { chunks.push(current); current = ""; }
+        if (p.length > maxChars){
+          const sentences = p.split(/(?<=[.!?])\s+/);
+          let sc = "";
+          for (const s of sentences){
+            const cand2 = sc ? sc + " " + s : s;
+            if (cand2.length > maxChars){
+              if (sc) chunks.push(sc);
+              sc = s;
+            } else { sc = cand2; }
+          }
+          if (sc) current = sc;
+        } else {
+          current = p;
+        }
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) chunks.push(current);
+    return chunks.length ? chunks : [text];
+  }
+
+  async function generateAudio(text, settings, onProgress){
+    const chunks = splitTextForTTS(text);
+    const blobs = [];
+    for (let i = 0; i < chunks.length; i++){
+      if (onProgress) onProgress(i + 1, chunks.length);
+      const res = await fetch(`${EL_BASE}/text-to-speech/${settings.voiceId}`, {
+        method: "POST",
+        headers: {
+          "xi-api-key": settings.apiKey,
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg"
+        },
+        body: JSON.stringify({
+          text: chunks[i],
+          model_id: settings.modelId || "eleven_multilingual_v2",
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
+      });
+      if (!res.ok) throw new Error(await elErrorMessage(res));
+      blobs.push(await res.blob());
+    }
+    return new Blob(blobs, { type: "audio/mpeg" });
+  }
+
+  async function generateAudioForStory(id, btnEl){
+    const story = currentStories.find(s => s.id === id);
+    if (!story) return;
+    const settings = getSettings();
+    if (!settings.apiKey || !settings.voiceId){
+      showToast("Avaa ensin Asetukset ja lisää API-avain + ääni", true);
+      document.getElementById("settingsOverlay").hidden = false;
+      return;
+    }
+    const original = btnEl.textContent;
+    btnEl.disabled = true;
+    btnEl.textContent = "⏳";
+    try {
+      const blob = await generateAudio(stripImagesForAudio(story.text), settings);
+      const audioUrl = await uploadAudioForStory(id, blob);
+      await saveStoryDoc(id, { title: story.title, text: story.text, audioUrl, createdAt: story.createdAt, updatedAt: Date.now() });
+      await refreshLibrary();
+      showToast("Äänikirja luotu! 🌙");
+    } catch (err){
+      showToast("Virhe äänen luonnissa: " + err.message, true);
+    } finally {
+      btnEl.disabled = false;
+      btnEl.textContent = original;
+    }
+  }
+
+  // ---------- Helpers ----------
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+  const IMG_MD_RE = /!\[\]\((data:image\/[^)]+)\)/;
+  function formatStoryText(text){
+    return text.split(/\n{2,}/).map(p => {
+      const m = p.trim().match(IMG_MD_RE);
+      if (m && p.trim() === m[0]) return `<img class="story-img" src="${m[1]}" alt="">`;
+      return `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`;
+    }).join("");
+  }
+  function stripImagesForSnippet(text){
+    return text.replace(/!\[\]\(data:image\/[^)]+\)/g, "").replace(/\n{2,}/g, " ").trim();
+  }
+  function stripImagesForAudio(text){
+    return text.replace(/!\[\]\(data:image\/[^)]+\)/g, "").replace(/\n{3,}/g, "\n\n").trim();
+  }
+  let pendingImages = {};
+  let editingId = null;
+  let imgIdCounter = 0;
+  function resolveImageTokens(text){
+    return text.replace(/\[\[KUVA:([^\]]+)\]\]/g, (m, id) => pendingImages[id] ? `![](${pendingImages[id]})` : "");
+  }
+  function tokenizeImagesForEdit(text){
+    return text.replace(/!\[\]\((data:image\/[^)]+)\)/g, (m, url) => {
+      const id = "i" + (imgIdCounter++) + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      pendingImages[id] = url;
+      return `[[KUVA:${id}]]`;
+    });
+  }
+  function setAddModalMode(isEdit){
+    document.getElementById("addModalTitle").textContent = isEdit ? "Muokkaa satua" : "Uusi satu";
+    document.getElementById("saveTextBtn").textContent = isEdit ? "Tallenna muutokset" : "Tallenna satu";
+  }
+  function openEditView(story){
+    editingId = story.id;
+    pendingImages = {};
+    setAddModalMode(true);
+    document.getElementById("titleInput").value = story.title;
+    const ta = document.getElementById("textInput");
+    ta.value = tokenizeImagesForEdit(story.text);
+    document.getElementById("charCount").textContent = ta.value.length;
+    document.getElementById("progressNote").hidden = true;
+    document.getElementById("addOverlay").hidden = false;
+  }
+  function formatTime(sec){
+    if (!isFinite(sec) || sec < 0) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+  let toastTimer = null;
+  function showToast(msg, isError){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.toggle("error", !!isError);
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
+  }
+
+  // ---------- State ----------
+  let currentStories = [];
+  let currentPlayingId = null;
+  let voicesCache = [];
+
+  // ---------- Library rendering ----------
+  async function refreshLibrary(){
+    try {
+      currentStories = await getAllStoriesFromDb();
+    } catch (err){
+      showToast("Virhe satujen haussa: " + err.message, true);
+      currentStories = [];
+    }
+    renderLibrary();
+  }
+
+  function renderLibrary(){
+    const lib = document.getElementById("library");
+    const empty = document.getElementById("emptyState");
+    if (!currentStories.length){
+      lib.innerHTML = "";
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    lib.innerHTML = currentStories.map(s => `
+      <div class="story-card" data-id="${s.id}">
+        <div class="story-info">
+          <div class="story-title">${escapeHtml(s.title)}</div>
+          <div class="story-snippet">${(() => { const sn = stripImagesForSnippet(s.text); return escapeHtml(sn.slice(0, 90)) + (sn.length > 90 ? "…" : ""); })()}</div>
+        </div>
+        <div class="story-actions">
+          <button class="icon-btn" data-action="read" data-id="${s.id}" aria-label="Lue">📖</button>
+          ${s.audioUrl
+            ? `<button class="play-icon-btn" data-action="play" data-id="${s.id}" aria-label="Toista">▶</button>`
+            : (isAdmin ? `<button class="icon-btn" data-action="narrate" data-id="${s.id}" aria-label="Luo äänikirja">🎙</button>` : "")}
+          ${isAdmin ? `<button class="icon-btn" data-action="edit" data-id="${s.id}" aria-label="Muokkaa">✏️</button>` : ""}
+          ${isAdmin ? `<button class="icon-btn danger" data-action="delete" data-id="${s.id}" aria-label="Poista">🗑</button>` : ""}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  document.getElementById("library").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === "play"){
+      playStory(id);
+    } else if (btn.dataset.action === "read"){
+      const story = currentStories.find(s => s.id === id);
+      if (story) openReadView(story);
+    } else if (btn.dataset.action === "narrate"){
+      await generateAudioForStory(id, btn);
+    } else if (btn.dataset.action === "edit"){
+      const story = currentStories.find(s => s.id === id);
+      if (story) openEditView(story);
+    } else if (btn.dataset.action === "delete"){
+      if (confirm("Poistetaanko tämä satu pysyvästi?")){
+        await deleteStoryDoc(id);
+        if (currentPlayingId === id) closePlayer();
+        await refreshLibrary();
+      }
+    }
+  });
+
+  // ---------- Player ----------
+  function playStory(id){
+    const story = currentStories.find(s => s.id === id);
+    if (!story || !story.audioUrl) return;
+    const audioEl = document.getElementById("audioEl");
+    audioEl.src = story.audioUrl;
+    document.getElementById("playerTitle").textContent = story.title;
+    document.getElementById("player").hidden = false;
+    currentPlayingId = id;
+    audioEl.play().catch(() => {});
+    document.getElementById("playPauseBtn").textContent = "⏸";
+  }
+
+  function closePlayer(){
+    const audioEl = document.getElementById("audioEl");
+    audioEl.pause();
+    audioEl.removeAttribute("src");
+    audioEl.load();
+    document.getElementById("player").hidden = true;
+    document.getElementById("moonProgress").style.setProperty("--progress", 0);
+    currentPlayingId = null;
+  }
+
+  document.getElementById("playPauseBtn").addEventListener("click", () => {
+    const audioEl = document.getElementById("audioEl");
+    if (audioEl.paused){
+      audioEl.play();
+      document.getElementById("playPauseBtn").textContent = "⏸";
+    } else {
+      audioEl.pause();
+      document.getElementById("playPauseBtn").textContent = "▶";
+    }
+  });
+  document.getElementById("closePlayerBtn").addEventListener("click", closePlayer);
+
+  // ---------- Read view ----------
+  const readOverlay = document.getElementById("readOverlay");
+  function openReadView(story){
+    document.getElementById("readTitle").textContent = story.title;
+    document.getElementById("readBody").innerHTML = formatStoryText(story.text);
+    readOverlay.hidden = false;
+  }
+  document.getElementById("readCloseBtn").addEventListener("click", () => readOverlay.hidden = true);
+
+  const audioElRef = document.getElementById("audioEl");
+  audioElRef.addEventListener("timeupdate", () => {
+    const p = audioElRef.duration ? audioElRef.currentTime / audioElRef.duration : 0;
+    document.getElementById("moonProgress").style.setProperty("--progress", p);
+    document.getElementById("curTime").textContent = formatTime(audioElRef.currentTime);
+    if (audioElRef.duration) document.getElementById("totalTime").textContent = formatTime(audioElRef.duration);
+  });
+  audioElRef.addEventListener("ended", () => {
+    document.getElementById("playPauseBtn").textContent = "▶";
+  });
+
+  // ---------- Settings modal ----------
+  const settingsOverlay = document.getElementById("settingsOverlay");
+  document.getElementById("settingsBtn").addEventListener("click", () => {
+    const s = getSettings();
+    document.getElementById("apiKeyInput").value = s.apiKey || "";
+    document.getElementById("modelSelect").value = s.modelId || "eleven_multilingual_v2";
+    if (s.voiceId && s.voiceName){
+      voicesCache = [{ voice_id: s.voiceId, name: s.voiceName, preview_url: s.voicePreview || "" }];
+      populateVoiceSelect(voicesCache, s.voiceId);
+    }
+    settingsOverlay.hidden = false;
+  });
+  document.getElementById("settingsCloseBtn").addEventListener("click", () => settingsOverlay.hidden = true);
+
+  function populateVoiceSelect(voices, selectedId){
+    const wrap = document.getElementById("voiceFieldWrap");
+    const sel = document.getElementById("voiceSelect");
+    sel.innerHTML = voices.map(v => `<option value="${v.voice_id}">${escapeHtml(v.name)}</option>`).join("");
+    if (selectedId) sel.value = selectedId;
+    wrap.hidden = false;
+  }
+
+  document.getElementById("fetchVoicesBtn").addEventListener("click", async () => {
+    const apiKey = document.getElementById("apiKeyInput").value.trim();
+    if (!apiKey){ showToast("Syötä ensin API-avain", true); return; }
+    const btn = document.getElementById("fetchVoicesBtn");
+    btn.disabled = true;
+    btn.textContent = "Haetaan...";
+    try {
+      voicesCache = await fetchVoices(apiKey);
+      if (!voicesCache.length){ showToast("Ei ääniä löytynyt tililtä", true); }
+      else { populateVoiceSelect(voicesCache); showToast(`${voicesCache.length} ääntä löytyi`); }
+    } catch (err){
+      showToast("Virhe: " + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Hae äänet";
+    }
+  });
+
+  document.getElementById("previewVoiceBtn").addEventListener("click", () => {
+    const sel = document.getElementById("voiceSelect");
+    const voice = voicesCache.find(v => v.voice_id === sel.value);
+    if (voice && voice.preview_url){
+      new Audio(voice.preview_url).play().catch(() => {});
+    } else {
+      showToast("Esikuuntelua ei saatavilla tälle äänelle", true);
+    }
+  });
+
+  document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+    const apiKey = document.getElementById("apiKeyInput").value.trim();
+    const sel = document.getElementById("voiceSelect");
+    const voiceId = sel.value;
+    const voice = voicesCache.find(v => v.voice_id === voiceId);
+    const modelId = document.getElementById("modelSelect").value;
+    if (!apiKey){ showToast("API-avain puuttuu", true); return; }
+    if (!voiceId){ showToast("Valitse ääni (hae äänet ensin)", true); return; }
+    saveSettingsToStorage({ apiKey, voiceId, voiceName: voice ? voice.name : "", voicePreview: voice ? voice.preview_url : "", modelId });
+    showToast("Asetukset tallennettu");
+    settingsOverlay.hidden = true;
+  });
+
+  // ---------- Add / edit story ----------
+  const addOverlay = document.getElementById("addOverlay");
+  const textInput = document.getElementById("textInput");
+  textInput.addEventListener("input", () => {
+    document.getElementById("charCount").textContent = textInput.value.length;
+  });
+  document.getElementById("addStoryBtn").addEventListener("click", () => {
+    editingId = null;
+    pendingImages = {};
+    setAddModalMode(false);
+    document.getElementById("titleInput").value = "";
+    textInput.value = "";
+    document.getElementById("charCount").textContent = "0";
+    document.getElementById("progressNote").hidden = true;
+    addOverlay.hidden = false;
+  });
+  document.getElementById("addCloseBtn").addEventListener("click", () => addOverlay.hidden = true);
+
+  let lastCaretPos = 0;
+  textInput.addEventListener("keyup", () => { lastCaretPos = textInput.selectionStart; });
+  textInput.addEventListener("click", () => { lastCaretPos = textInput.selectionStart; });
+
+  document.getElementById("insertImageBtn").addEventListener("click", () => {
+    document.getElementById("imageFileInput").click();
+  });
+  document.getElementById("imageFileInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const id = "i" + (imgIdCounter++) + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      pendingImages[id] = reader.result;
+      const token = `[[KUVA:${id}]]`;
+      const pos = lastCaretPos || textInput.value.length;
+      textInput.value = textInput.value.slice(0, pos) + token + textInput.value.slice(pos);
+      document.getElementById("charCount").textContent = textInput.value.length;
+      showToast("Kuva lisätty");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  });
+
+  document.getElementById("saveTextBtn").addEventListener("click", async () => {
+    const title = document.getElementById("titleInput").value.trim();
+    const rawText = textInput.value.trim();
+    if (!title){ showToast("Anna sadulle nimi", true); return; }
+    if (!rawText){ showToast("Tarina on tyhjä", true); return; }
+    const text = resolveImageTokens(rawText);
+    const btn = document.getElementById("saveTextBtn");
+    btn.disabled = true;
+    try {
+      const id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+      const existing = editingId ? currentStories.find(s => s.id === editingId) : null;
+      await saveStoryDoc(id, {
+        title,
+        text,
+        audioUrl: existing ? (existing.audioUrl || null) : null,
+        createdAt: existing ? existing.createdAt : Date.now(),
+        updatedAt: Date.now()
+      });
+      addOverlay.hidden = true;
+      await refreshLibrary();
+      showToast(editingId ? "Muutokset tallennettu" : "Satu tallennettu");
+    } catch (err){
+      showToast("Virhe tallennuksessa: " + err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("generateBtn").addEventListener("click", async () => {
+    const title = document.getElementById("titleInput").value.trim();
+    const rawText = textInput.value.trim();
+    if (!title){ showToast("Anna sadulle nimi", true); return; }
+    if (!rawText){ showToast("Tarina on tyhjä", true); return; }
+    const settings = getSettings();
+    if (!settings.apiKey || !settings.voiceId){
+      showToast("Avaa ensin Asetukset ja lisää API-avain + ääni", true);
+      document.getElementById("settingsOverlay").hidden = false;
+      return;
+    }
+    const text = resolveImageTokens(rawText);
+    const btn = document.getElementById("generateBtn");
+    const progressNote = document.getElementById("progressNote");
+    btn.disabled = true;
+    progressNote.hidden = false;
+    progressNote.textContent = "Luodaan äänikirjaa...";
+    try {
+      const id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+      const existing = editingId ? currentStories.find(s => s.id === editingId) : null;
+      const blob = await generateAudio(stripImagesForAudio(text), settings, (i, n) => {
+        progressNote.textContent = `Luodaan äänikirjaa... (${i}/${n})`;
+      });
+      const audioUrl = await uploadAudioForStory(id, blob);
+      await saveStoryDoc(id, {
+        title,
+        text,
+        audioUrl,
+        createdAt: existing ? existing.createdAt : Date.now(),
+        updatedAt: Date.now()
+      });
+      addOverlay.hidden = true;
+      await refreshLibrary();
+      showToast("Satu ja äänikirja tallennettu! 🌙");
+    } catch (err){
+      showToast("Virhe äänikirjan luonnissa: " + err.message, true);
+    } finally {
+      btn.disabled = false;
+      progressNote.hidden = true;
+    }
+  });
+
+  // ---------- Service worker ----------
+  if ("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
