@@ -381,7 +381,7 @@ import {
   getFirestore, collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, orderBy
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
-  getStorage, ref, uploadBytes, getDownloadURL, deleteObject
+  getStorage, ref, uploadBytes, getDownloadURL, deleteObject, listAll
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js";
 
 (async function(){
@@ -508,11 +508,35 @@ import {
   async function deleteStoryDoc(id){
     await deleteDoc(doc(db, "stories", id));
     try { await deleteObject(ref(storage, `audio/${id}.mp3`)); } catch (e){ /* no audio file, ignore */ }
+    await deleteStoryImages(id);
   }
   async function uploadAudioForStory(id, blob){
     const audioRef = ref(storage, `audio/${id}.mp3`);
     await uploadBytes(audioRef, blob, { contentType: "audio/mpeg" });
     return await getDownloadURL(audioRef);
+  }
+  function dataUrlToBlob(dataUrl){
+    const [header, base64] = dataUrl.split(",");
+    const mimeMatch = header.match(/data:(.*?);base64/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+  async function uploadStoryImage(storyId, imgId, dataUrl){
+    const blob = dataUrlToBlob(dataUrl);
+    const ext = blob.type === "image/png" ? "png" : (blob.type === "image/webp" ? "webp" : "jpg");
+    const imgRef = ref(storage, `images/${storyId}/${imgId}.${ext}`);
+    await uploadBytes(imgRef, blob, { contentType: blob.type });
+    return await getDownloadURL(imgRef);
+  }
+  async function deleteStoryImages(storyId){
+    try {
+      const folderRef = ref(storage, `images/${storyId}`);
+      const list = await listAll(folderRef);
+      await Promise.all(list.items.map(item => deleteObject(item).catch(() => {})));
+    } catch (e){ /* no images, ignore */ }
   }
 
   // ---------- Settings ----------
@@ -628,7 +652,7 @@ import {
     d.textContent = str;
     return d.innerHTML;
   }
-  const IMG_MD_RE = /!\[\]\((data:image\/[^)]+)\)/;
+  const IMG_MD_RE = /!\[\]\((data:image\/[^)]+|https?:\/\/[^)]+)\)/;
   function formatStoryText(text){
     return text.split(/\n{2,}/).map(p => {
       const m = p.trim().match(IMG_MD_RE);
@@ -637,19 +661,48 @@ import {
     }).join("");
   }
   function stripImagesForSnippet(text){
-    return text.replace(/!\[\]\(data:image\/[^)]+\)/g, "").replace(/\n{2,}/g, " ").trim();
+    return text.replace(/!\[\]\((?:data:image\/[^)]+|https?:\/\/[^)]+)\)/g, "").replace(/\n{2,}/g, " ").trim();
   }
   function stripImagesForAudio(text){
-    return text.replace(/!\[\]\(data:image\/[^)]+\)/g, "").replace(/\n{3,}/g, "\n\n").trim();
+    return text.replace(/!\[\]\((?:data:image\/[^)]+|https?:\/\/[^)]+)\)/g, "").replace(/\n{3,}/g, "\n\n").trim();
   }
   let pendingImages = {};
   let editingId = null;
   let imgIdCounter = 0;
-  function resolveImageTokens(text){
-    return text.replace(/\[\[KUVA:([^\]]+)\]\]/g, (m, id) => pendingImages[id] ? `![](${pendingImages[id]})` : "");
+  async function resolveImageTokens(text, storyId){
+    const matches = [...text.matchAll(/\[\[KUVA:([^\]]+)\]\]/g)];
+    let result = text;
+    for (const m of matches){
+      const id = m[1];
+      const val = pendingImages[id];
+      if (!val){ result = result.replace(m[0], ""); continue; }
+      const url = val.startsWith("data:") ? await uploadStoryImage(storyId, id, val) : val;
+      result = result.replace(m[0], `![](${url})`);
+    }
+    return result;
+  }
+  function resizeImageDataUrl(dataUrl, maxDim){
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width, height = img.height;
+        if (width > maxDim || height > maxDim){
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
   }
   function tokenizeImagesForEdit(text){
-    return text.replace(/!\[\]\((data:image\/[^)]+)\)/g, (m, url) => {
+    return text.replace(/!\[\]\((data:image\/[^)]+|https?:\/\/[^)]+)\)/g, (m, url) => {
       const id = "i" + (imgIdCounter++) + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
       pendingImages[id] = url;
       return `[[KUVA:${id}]]`;
@@ -899,9 +952,10 @@ import {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
+      const resized = await resizeImageDataUrl(reader.result, 1600);
       const id = "i" + (imgIdCounter++) + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-      pendingImages[id] = reader.result;
+      pendingImages[id] = resized;
       const token = `[[KUVA:${id}]]`;
       const pos = lastCaretPos || textInput.value.length;
       textInput.value = textInput.value.slice(0, pos) + token + textInput.value.slice(pos);
@@ -917,11 +971,11 @@ import {
     const rawText = textInput.value.trim();
     if (!title){ showToast("Anna sadulle nimi", true); return; }
     if (!rawText){ showToast("Tarina on tyhjä", true); return; }
-    const text = resolveImageTokens(rawText);
     const btn = document.getElementById("saveTextBtn");
     btn.disabled = true;
     try {
       const id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+      const text = await resolveImageTokens(rawText, id);
       const existing = editingId ? currentStories.find(s => s.id === editingId) : null;
       await saveStoryDoc(id, {
         title,
@@ -951,7 +1005,6 @@ import {
       document.getElementById("settingsOverlay").hidden = false;
       return;
     }
-    const text = resolveImageTokens(rawText);
     const btn = document.getElementById("generateBtn");
     const progressNote = document.getElementById("progressNote");
     btn.disabled = true;
@@ -959,6 +1012,7 @@ import {
     progressNote.textContent = "Luodaan äänikirjaa...";
     try {
       const id = editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+      const text = await resolveImageTokens(rawText, id);
       const existing = editingId ? currentStories.find(s => s.id === editingId) : null;
       const blob = await generateAudio(stripImagesForAudio(text), settings, (i, n) => {
         progressNote.textContent = `Luodaan äänikirjaa... (${i}/${n})`;
