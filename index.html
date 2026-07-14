@@ -213,6 +213,14 @@
   .read-body p{margin:0 0 1em;}
   .story-img{width:100%;border-radius:var(--radius);margin:4px 0 1.2em;display:block;box-shadow:0 6px 20px rgba(0,0,0,.25);}
 
+  .read-close-fab{
+    position:fixed;
+    right:18px;
+    bottom:calc(18px + env(safe-area-inset-bottom));
+    z-index:60;
+    box-shadow:0 6px 18px rgba(0,0,0,.4);
+  }
+
   .toast{
     position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
     background:var(--bg-elevated-2);color:var(--text-primary);padding:12px 20px;
@@ -367,6 +375,7 @@
       <h2 class="read-title" id="readTitle"></h2>
       <div class="read-body" id="readBody"></div>
     </div>
+    <button class="icon-btn read-close-fab" id="readCloseFab" aria-label="Sulje satu">✕</button>
   </div>
 
   <div class="toast" id="toast" hidden></div>
@@ -842,12 +851,30 @@ import {
 
   // ---------- Read view ----------
   const readOverlay = document.getElementById("readOverlay");
+  let readViewHistoryPushed = false;
   function openReadView(story){
     document.getElementById("readTitle").textContent = story.title;
     document.getElementById("readBody").innerHTML = formatStoryText(story.text);
     readOverlay.hidden = false;
+    history.pushState({ modal: "read" }, "");
+    readViewHistoryPushed = true;
   }
-  document.getElementById("readCloseBtn").addEventListener("click", () => readOverlay.hidden = true);
+  function closeReadView(fromPopState){
+    if (readOverlay.hidden) return;
+    readOverlay.hidden = true;
+    if (readViewHistoryPushed){
+      readViewHistoryPushed = false;
+      if (!fromPopState) history.back();
+    }
+  }
+  document.getElementById("readCloseBtn").addEventListener("click", () => closeReadView());
+  document.getElementById("readCloseFab").addEventListener("click", () => closeReadView());
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !readOverlay.hidden) closeReadView();
+  });
+  window.addEventListener("popstate", () => {
+    if (!readOverlay.hidden) closeReadView(true);
+  });
 
   const audioElRef = document.getElementById("audioEl");
   audioElRef.addEventListener("timeupdate", () => {
