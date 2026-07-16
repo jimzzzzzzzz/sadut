@@ -76,7 +76,6 @@
     -webkit-background-clip:text;background-clip:text;color:transparent;
   }
   .moon-mark{filter:drop-shadow(0 0 7px rgba(143,191,138,.5));-webkit-text-fill-color:initial;}
-.brand-icon{height:1.9rem;width:1.9rem;border-radius:8px;object-fit:cover;filter:drop-shadow(0 0 7px rgba(143,191,138,.5));flex-shrink:0;}
   .brand-tagline{
     font-size:.68rem;letter-spacing:2px;text-transform:uppercase;
     color:var(--text-muted);font-weight:700;margin-left:3px;
@@ -250,16 +249,16 @@
 <!-- Sign-in gate -->
 <div class="overlay" id="authGate">
   <div class="modal" style="text-align:center;">
-  <div class="gate-brand"><img src="icon-512.png" alt="Satukirjasto" style="height:2.2rem;width:2.2rem;border-radius:8px;object-fit:cover;">Satukirjasto</div><p class="hint" style="margin-top:4px;">Kirjaudu sisään jatkaaksesi satukirjastoon.</p>
-    <button class="btn-primary" id="googleSignInBtn">Kirjaudu Google-tilillä</button>
+  <div class="gate-brand"><span>📖</span>Satukirjasto</div>
+<p class="hint" style="margin-top:4px;">Kirjaudu sisään jatkaaksesi satukirjastoon.</p>    <button class="btn-primary" id="googleSignInBtn">Kirjaudu Google-tilillä</button>
   </div>
 </div>
 
 <!-- Waiting-for-access gate -->
 <div class="overlay" id="pendingGate" hidden>
   <div class="modal" style="text-align:center;">
-    <div class="gate-brand" style="font-size:1.5rem;"><img src="icon-512.png" alt="Satukirjasto" style="height:1.8rem;width:1.8rem;border-radius:7px;object-fit:cover;vertical-align:middle;margin-right:8px;">Satukirjasto</div>    <h2 style="margin-top:6px;">Tili odottaa hyväksyntää</h2>
-    <p class="hint">Kirjauduit sisään, mutta tililläsi ei ole vielä pääsyä satukirjastoon. Ota yhteyttä ylläpitäjään.</p>
+    <div class="gate-brand" style="font-size:1.5rem;"><span>📖</span>Satukirjasto</div>
+<h2 style="margin-top:6px;">Tili odottaa hyväksyntää</h2>    <p class="hint">Kirjauduit sisään, mutta tililläsi ei ole vielä pääsyä satukirjastoon. Ota yhteyttä ylläpitäjään.</p>
     <button class="btn-secondary" id="signOutBtnPending">Kirjaudu ulos</button>
   </div>
 </div>
@@ -268,8 +267,8 @@
 
   <header class="topbar">
     <div class="brand-wrap">
-      <div class="brand"><img src="icon-512.png" alt="Satukirjasto" class="brand-icon">Satukirjasto</div>      <div class="brand-tagline">Iltasatuja pienille korville</div>
-    </div>
+      <div class="brand"><span class="moon-mark">📖</span>Satukirjasto</div>
+      <div class="brand-tagline">Iltasatuja pienille korville</div>    </div>
     <div style="display:flex;gap:8px;">
       <button class="icon-btn" id="themeToggleBtn" aria-label="Vaihda päivä/yö-teema">☀️</button>
       <button class="icon-btn" id="settingsBtn" aria-label="Asetukset">⚙️</button>
