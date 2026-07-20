@@ -88,6 +88,7 @@
   }
   .icon-btn:hover{background:var(--bg-elevated-2);}
   .icon-btn.danger{color:var(--danger);}
+  .icon-btn.active{background:var(--accent-gold);color:#0c2023;}
 
   .toolbar{margin:18px 0 20px;}
   .btn-primary{
@@ -271,6 +272,7 @@
       <div class="brand-tagline">Iltasatuja pienille korville</div>    </div>
     <div style="display:flex;gap:8px;">
       <button class="icon-btn" id="themeToggleBtn" aria-label="Vaihda päivä/yö-teema">☀️</button>
+      <button class="icon-btn" id="bgMusicBtn" aria-label="Taustamusiikki">🎵</button>
       <button class="icon-btn" id="settingsBtn" aria-label="Asetukset">⚙️</button>
       <button class="icon-btn" id="signOutBtn" aria-label="Kirjaudu ulos">🚪</button>
     </div>
@@ -303,6 +305,25 @@
     <button class="play-btn" id="playPauseBtn" aria-label="Toista/Tauko">⏸</button>
     <button class="icon-btn" id="closePlayerBtn" aria-label="Sulje soitin">✕</button>
     <audio id="audioEl" preload="metadata"></audio>
+  </div>
+
+  <audio id="bgAudioEl" loop preload="none"></audio>
+
+  <!-- Background music modal -->
+  <div class="overlay" id="bgMusicOverlay" hidden>
+    <div class="modal">
+      <button class="modal-close" id="bgMusicCloseBtn">Sulje ✕</button>
+      <h2>Taustamusiikki</h2>
+      <p class="hint">Valitse taustalla jatkuvasti silmukassa soiva ääniraita. Se soi myös äänisadun aikana.</p>
+      <div class="field">
+        <label for="bgVolumeSlider">Äänenvoimakkuus</label>
+        <input type="range" id="bgVolumeSlider" min="0" max="100" value="40" style="width:100%;">
+      </div>
+      <div id="bgTrackList" class="library" style="margin-bottom:16px;"></div>
+      <button class="btn-secondary" id="bgUploadBtn" type="button">⬆️ Lisää ääniraita</button>
+      <input type="file" id="bgFileInput" accept="audio/*" hidden>
+      <div class="progress-note" id="bgUploadProgress" hidden></div>
+    </div>
   </div>
 
   <!-- Settings modal -->
@@ -387,7 +408,7 @@ import {
   getFirestore, collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, orderBy
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
-  getStorage, ref, uploadBytes, getDownloadURL, deleteObject, listAll
+  getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject, listAll
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js";
 
 (async function(){
@@ -411,6 +432,7 @@ import {
   const EL_BASE = "https://api.elevenlabs.io/v1";
   const SETTINGS_KEY = "satukirjasto-settings";
   const THEME_KEY = "satukirjasto-theme";
+  const BGMUSIC_KEY = "satukirjasto-bgmusic";
 
   let isAdmin = false;
   let currentUser = null;
@@ -545,6 +567,34 @@ import {
     } catch (e){ /* no images, ignore */ }
   }
 
+  // ---------- Background music storage ----------
+  async function listBgTracks(){
+    try {
+      const folderRef = ref(storage, "bgmusic");
+      const list = await listAll(folderRef);
+      return await Promise.all(list.items.map(async item => ({
+        name: item.name,
+        path: item.fullPath,
+        url: await getDownloadURL(item)
+      })));
+    } catch (e){
+      return [];
+    }
+  }
+  function uploadBgTrack(file, onProgress){
+    const safeName = Date.now().toString(36) + "-" + file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const trackRef = ref(storage, `bgmusic/${safeName}`);
+    return new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(trackRef, file, { contentType: file.type || "audio/mpeg" });
+      task.on("state_changed", (snap) => {
+        if (onProgress && snap.totalBytes) onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+      }, reject, () => resolve());
+    });
+  }
+  async function deleteBgTrack(path){
+    await deleteObject(ref(storage, path));
+  }
+
   // ---------- Settings ----------
   function getSettings(){
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); }
@@ -552,6 +602,13 @@ import {
   }
   function saveSettingsToStorage(s){
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  }
+  function getBgMusicSettings(){
+    try { return JSON.parse(localStorage.getItem(BGMUSIC_KEY) || "{}"); }
+    catch { return {}; }
+  }
+  function saveBgMusicSettings(s){
+    localStorage.setItem(BGMUSIC_KEY, JSON.stringify(s));
   }
 
   // ---------- ElevenLabs API ----------
@@ -883,6 +940,136 @@ import {
   audioElRef.addEventListener("ended", () => {
     document.getElementById("playPauseBtn").textContent = "▶";
   });
+
+  // ---------- Background music ----------
+  const bgAudioEl = document.getElementById("bgAudioEl");
+  const bgMusicBtn = document.getElementById("bgMusicBtn");
+  const bgMusicOverlay = document.getElementById("bgMusicOverlay");
+  let bgTracksCache = [];
+
+  function renderBgTrackList(){
+    const wrap = document.getElementById("bgTrackList");
+    const s = getBgMusicSettings();
+    const isPlaying = !bgAudioEl.paused && !!bgAudioEl.src;
+    let rows = `
+      <div class="story-card">
+        <div class="story-info"><div class="story-title">Ei taustamusiikkia</div></div>
+        <div class="story-actions">
+          <button class="icon-btn" data-action="bg-off" aria-label="Sammuta taustamusiikki">${!s.path ? "✓" : "⏹"}</button>
+        </div>
+      </div>
+    `;
+    rows += bgTracksCache.map(t => {
+      const active = s.path === t.path;
+      return `
+        <div class="story-card">
+          <div class="story-info"><div class="story-title">${escapeHtml(t.name)}</div></div>
+          <div class="story-actions">
+            <button class="play-icon-btn" data-action="bg-select" data-path="${escapeHtml(t.path)}" aria-label="Valitse">${active && isPlaying ? "⏸" : "▶"}</button>
+            ${isAdmin ? `<button class="icon-btn danger" data-action="bg-delete" data-path="${escapeHtml(t.path)}" aria-label="Poista">🗑</button>` : ""}
+          </div>
+        </div>
+      `;
+    }).join("");
+    wrap.innerHTML = rows;
+  }
+
+  function applyBgMusicSelection(track){
+    const s = getBgMusicSettings();
+    if (!track){
+      bgAudioEl.pause();
+      bgAudioEl.removeAttribute("src");
+      saveBgMusicSettings({ ...s, path: null, url: null, name: null });
+      renderBgTrackList();
+      return;
+    }
+    bgAudioEl.src = track.url;
+    bgAudioEl.volume = (s.volume != null ? s.volume : 40) / 100;
+    bgAudioEl.play().catch(() => {});
+    saveBgMusicSettings({ ...s, path: track.path, url: track.url, name: track.name });
+    renderBgTrackList();
+  }
+
+  bgAudioEl.addEventListener("play", () => { bgMusicBtn.classList.add("active"); renderBgTrackList(); });
+  bgAudioEl.addEventListener("pause", () => { bgMusicBtn.classList.remove("active"); renderBgTrackList(); });
+
+  document.getElementById("bgTrackList").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    if (btn.dataset.action === "bg-off"){
+      applyBgMusicSelection(null);
+    } else if (btn.dataset.action === "bg-select"){
+      const path = btn.dataset.path;
+      const s = getBgMusicSettings();
+      if (s.path === path && bgAudioEl.src){
+        if (bgAudioEl.paused) bgAudioEl.play().catch(() => {});
+        else bgAudioEl.pause();
+        return;
+      }
+      const track = bgTracksCache.find(t => t.path === path);
+      if (track) applyBgMusicSelection(track);
+    } else if (btn.dataset.action === "bg-delete"){
+      const path = btn.dataset.path;
+      if (confirm("Poistetaanko tämä ääniraita pysyvästi?")){
+        const s = getBgMusicSettings();
+        if (s.path === path) applyBgMusicSelection(null);
+        try {
+          await deleteBgTrack(path);
+          bgTracksCache = await listBgTracks();
+          renderBgTrackList();
+        } catch (err){
+          showToast("Virhe poistossa: " + err.message, true);
+        }
+      }
+    }
+  });
+
+  bgMusicBtn.addEventListener("click", async () => {
+    bgMusicOverlay.hidden = false;
+    bgTracksCache = await listBgTracks();
+    renderBgTrackList();
+  });
+  document.getElementById("bgMusicCloseBtn").addEventListener("click", () => { bgMusicOverlay.hidden = true; });
+
+  document.getElementById("bgVolumeSlider").addEventListener("input", (e) => {
+    const vol = parseInt(e.target.value, 10);
+    bgAudioEl.volume = vol / 100;
+    saveBgMusicSettings({ ...getBgMusicSettings(), volume: vol });
+  });
+
+  document.getElementById("bgUploadBtn").addEventListener("click", () => {
+    document.getElementById("bgFileInput").click();
+  });
+  document.getElementById("bgFileInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const progressNote = document.getElementById("bgUploadProgress");
+    progressNote.hidden = false;
+    progressNote.textContent = "Ladataan... 0%";
+    try {
+      await uploadBgTrack(file, (pct) => { progressNote.textContent = `Ladataan... ${pct}%`; });
+      progressNote.hidden = true;
+      showToast("Ääniraita lisätty");
+      bgTracksCache = await listBgTracks();
+      renderBgTrackList();
+    } catch (err){
+      progressNote.hidden = true;
+      showToast("Virhe latauksessa: " + err.message, true);
+    }
+  });
+
+  // Restore saved background music volume/track on load
+  (function initBgMusic(){
+    const s = getBgMusicSettings();
+    const vol = s.volume != null ? s.volume : 40;
+    document.getElementById("bgVolumeSlider").value = vol;
+    bgAudioEl.volume = vol / 100;
+    if (s.url){
+      bgAudioEl.src = s.url;
+      bgAudioEl.play().catch(() => {});
+    }
+  })();
 
   // ---------- Settings modal ----------
   const settingsOverlay = document.getElementById("settingsOverlay");
